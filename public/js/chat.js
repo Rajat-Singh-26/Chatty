@@ -3493,25 +3493,38 @@ function openGroupChat(groupElement) {
 }
 
 // Group chat notifications for incoming messages
-socket.on("group message", function ({ message, sender_id, group_id, createdAt, senderName, groupImage }) {
-  // Handle notifications for group messages
-  if (document.getElementById('security-notificationswitch').checked === true) {
-      if (document.getElementById('notification_muted_switch').checked === true) {
-          var audio = new Audio('assets/notification/notification.mp3');
-          audio.play(); // Play notification sound for group messages
-      }
+socket.on("group message", function ({ message, sender_id, receiverName, group_id, createdAt, senderName, senderImage, groupImage }) {
+    // Handle notifications for group messages
+    if (document.getElementById('security-notificationswitch').checked === true) {
+        if (document.getElementById('notification_muted_switch').checked === true) {
+            var audio = new Audio('assets/notification/notification.mp3');
+            audio.play(); // Play notification sound for group messages
+        }
 
-      const messageContent = message;
-      const groupImageUrl = groupImage || `assets/images/groups/default.jpg`;
+        // Ensure the sender's profile image (senderImage) is used, and fallback to a default one if not provided
+        const senderProfileImageUrl = senderImage || `assets/images/users/default_profile.jpg`;  // Default image if no senderImage is provided
+        const messageContent = message;
 
-      requestNotificationPermissions();
-      var instance = new Notification(senderName, {
-          body: messageContent,
-          icon: groupImageUrl
-      });
-  }
+        // Request notification permission if not granted yet
+        requestNotificationPermissions();
 
-  scrollToBottom(); // Ensure the group chat scrolls to the bottom when a new message is added
+        // Creating the notification
+        var instance = new Notification( receiverName, {
+            body: messageContent,
+            icon: senderProfileImageUrl, // Sender's profile image
+            image: groupImage || `assets/images/groups/default.jpg` // Fallback for group image
+        });
+
+        // Optionally, you could display more details like sender's name and message in the notification body
+        // For example: Display both profile picture and group image in the notification
+        instance.onclick = function() {
+            // You can add logic here to open the group chat or navigate to a specific URL when the notification is clicked.
+            openGroupChatById(group_id); // Example function to open the group chat
+        };
+    }
+
+    // Ensure the group chat scrolls to the bottom when a new message is added
+    scrollToBottom(); 
 });
 
 // Request notification permissions
