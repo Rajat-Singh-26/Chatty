@@ -3397,23 +3397,55 @@ function urltoFile(url, filename, mimeType) {
 
 // ------------------------------------------------------------------
 
-socket.on("chat message", function ({ sender_id, message, receiver_id }) {
-  if (sender_id !== userId) {  
-      playNotificationSound();  // Play sound for received messages
-      showBrowserNotification("New Message", message);
+
+// Listen for incoming chat messages
+socket.on("chat message", function ({ sender_id, message, receiver_id, createdAt, file_upload, receiverName, receiverImage, myid, flag }) {
+  // Play notification sound for received messages (if not the sender)
+  if (sender_id !== userId) {
+      playNotificationSound(); // Play sound for received messages
+      showBrowserNotification("New Message", message); // Show browser notification for new message
   } else {
-      playNotificationSound();  // Play sound for sent messages
+      playNotificationSound(); // Play sound for sent messages
   }
+
+  // Insert message in the chat box
+  const time = new Date(createdAt);
+  let created_at = `${time.getHours()}:${time.getMinutes()}`;
+
+  // Insert message into chat window
+  document.getElementById(myid).querySelector('.message_time').innerHTML = created_at;
+  document.getElementById(myid).querySelector('.chat-user-message').innerHTML = message || file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload : '';
+
+  // Group chat notifications
+  if (sender_id !== userId) {
+      if (document.getElementById('security-notificationswitch').checked === true) {
+          if (document.getElementById('notification_muted_switch').checked === true) {
+              var audio = new Audio('assets/notification/notification.mp3');
+              audio.play(); // Play notification sound for group messages
+          }
+
+          var messageContent = message || file_upload;
+          const receiver_Image = receiverImage ? `assets/images/users/${receiverImage}` : `assets/images/users/default_image.jpg`;
+          requestNotificationPermissions();
+          var instance = new Notification(receiverName, {
+              body: messageContent,
+              icon: receiver_Image
+          });
+      }
+  }
+
+  scrollToBottom(); // Ensure the chat scrolls to the bottom when a new message is added
 });
 
 // Function to play notification sound
 function playNotificationSound() {
   const audio = document.getElementById("messageSound");
   if (audio) {
-      audio.play().catch(error => console.log("Audio playback prevented:", error));
+      audio.play().catch(error => console.log("Audio playback prevented:", error)); // Handle possible errors
   }
 }
 
+// Function to show browser notification
 function showBrowserNotification(title, body) {
   if (Notification.permission === "granted") {
       new Notification(title, { body });
@@ -3426,8 +3458,65 @@ function showBrowserNotification(title, body) {
   }
 }
 
+// Ensure notification permissions are requested on page load
 document.addEventListener("DOMContentLoaded", function () {
   if (Notification.permission !== "granted") {
-      Notification.requestPermission();
+      Notification.requestPermission(); // Request permission if not granted
   }
 });
+
+// Handle group chat click events
+document.addEventListener("click", function (event) {
+  let groupItem = event.target.closest(".group_list a");
+  if (groupItem) {
+      console.log("Group Clicked in Mobile:", groupItem);
+      openGroupChat(groupItem); // Open group chat on click
+  }
+});
+
+// Function to open group chat
+function openGroupChat(groupElement) {
+  let groupId = groupElement.getAttribute("data-group-id");
+  console.log("Opening Group ID:", groupId);
+
+  if (!groupId) return;
+
+  // Hide normal chats and show group chat
+  document.querySelector(".user-chats1").style.display = "none";
+  document.querySelector(".user-chats2").style.display = "block";
+
+  // Scroll to top to ensure chat appears
+  document.querySelector(".user-chats2").scrollIntoView({ behavior: "smooth" });
+
+  // Load messages for the group
+  socket.emit("joinGroup", groupId);
+}
+
+// Group chat notifications for incoming messages
+socket.on("group message", function ({ message, sender_id, group_id, createdAt, senderName, groupImage }) {
+  // Handle notifications for group messages
+  if (document.getElementById('security-notificationswitch').checked === true) {
+      if (document.getElementById('notification_muted_switch').checked === true) {
+          var audio = new Audio('assets/notification/notification.mp3');
+          audio.play(); // Play notification sound for group messages
+      }
+
+      const messageContent = message;
+      const groupImageUrl = groupImage || `assets/images/groups/default.jpg`;
+
+      requestNotificationPermissions();
+      var instance = new Notification(senderName, {
+          body: messageContent,
+          icon: groupImageUrl
+      });
+  }
+
+  scrollToBottom(); // Ensure the group chat scrolls to the bottom when a new message is added
+});
+
+// Request notification permissions
+function requestNotificationPermissions() {
+  if (Notification.permission !== "denied") {
+      Notification.requestPermission(function (permission) { });
+  }
+}
