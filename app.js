@@ -70,21 +70,35 @@ dotenv.config();
 //const DB = process.env.DATABASE_LOCAL;
 
 /*--------for Atlas database connection----------*/
-const DB = process.env.DATABASE.replace(
-"<password>",
-process.env.DATABASE_PASSWORD
-);
+// const DB = process.env.DATABASE.replace(
+// "<password>",
+// process.env.DATABASE_PASSWORD
+// );
 
-mongoose
-  .connect(DB, {
-    useNewUrlParser: true
-  })
-  .then((con) => console.log("DB connection Succeful!"));
+// mongoose
+//   .connect(DB, {
+//     useNewUrlParser: true
+//   })
+//   .then((con) => console.log("DB connection Succeful!"));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json());
+// app.use(bodyParser.urlencoded({ extended: false }));
 
-// Socket
+
+//localmongodb
+// const mongoose = require('mongoose');
+mongoose.set('strictQuery', false);
+
+mongoose.connect('mongodb://localhost:27017/chatty', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch((err) => console.log('Failed to connect to MongoDB:', err));
+
+
+
+// // Socket
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const PORT = process.env.PORT;
