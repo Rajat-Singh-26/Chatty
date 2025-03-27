@@ -68,6 +68,7 @@ dotenv.config();
 
 /* ---------for Local database connection---------- */
 const DB = process.env.DATABASE_LOCAL;
+mongoose.set('strictQuery', false);
 
 /*--------for Atlas database connection----------*/
 // const DB = process.env.DATABASE.replace(
@@ -83,6 +84,8 @@ mongoose
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+
 
 // // Socket
 const http = require("http").createServer(app);
