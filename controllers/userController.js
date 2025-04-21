@@ -39,8 +39,8 @@ const createSendToken = (user, statusCode, res, msg) => {
 }
 
 /**
- * Sign Up
- */
+//  * Sign Up
+//  */
 exports.signup = catchAsync(async (req, res, next) => {
     if (req.body['g-recaptcha-response'] === undefined || req.body['g-recaptcha-response'] === '' || req.body['g-recaptcha-response'] === null) {
         return res.status(200).json({

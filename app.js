@@ -66,9 +66,65 @@ const {
 const { log } = require("console");
 dotenv.config();
 
+
 /* ---------for Local database connection---------- */
-const DB = process.env.DATABASE_LOCAL;
+const os = require("os");
+
+
+/* --------- Local MongoDB Connection ---------- */
+const DB = process.env.DATABASE_LOCAL; // e.g. "mongodb://localhost:27017/chatdb"
 mongoose.set('strictQuery', false);
+
+mongoose
+  .connect(DB, { useNewUrlParser: true })
+  .then(() => console.log("✅ DB connection successful!"))
+  .catch((err) => console.error("❌ DB connection failed:", err));
+
+/* --------- Middleware ---------- */
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(__dirname + "/public")); // Serve frontend from /public
+
+/* --------- Socket Setup ---------- */
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+
+/* --------- IP Utility ---------- */
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name in interfaces) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return "localhost";
+}
+
+/* --------- Start Server ---------- */
+const PORT = process.env.PORT;
+const HOST = "0.0.0.0"; // Allow access from LAN devices
+
+http.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running at http://${getLocalIP()}:${PORT}`);
+});
+
+/* --------- Socket.io Logic (Add your events below) ---------- */
+io.on("connection", (socket) => {
+  console.log("New client connected");
+
+  socket.on("chat message", (msg) => {
+    io.emit("chat message", msg);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+});
+
+
+
 
 /*--------for Atlas database connection----------*/
 // const DB = process.env.DATABASE.replace(
@@ -76,23 +132,22 @@ mongoose.set('strictQuery', false);
 // process.env.DATABASE_PASSWORD
 // );
 
-mongoose
-  .connect(DB, {
-    useNewUrlParser: true
-  })
-  .then((con) => console.log("DB connection Succeful!"));
+// mongoose
+//   .connect(DB, {
+//     useNewUrlParser: true
+//   })
+//   .then((con) => console.log("DB connection Succeful!"));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json());
+// app.use(bodyParser.urlencoded({ extended: false }));
 
 
-
-// // Socket
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
-const PORT = process.env.PORT;
-http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-app.use(express.static(__dirname + "/public"));
+// Socket
+// const http = require("http").createServer(app);
+// const io = require("socket.io")(http);
+// const PORT = process.env.PORT;
+// http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// app.use(express.static(__dirname + "/public"));
 
 const activeUsers = new Set();
 
@@ -377,7 +432,7 @@ io.on("connection", (socket) => {
   });
 
   // Message Create
-  socket.on("chat message", function ({ message, sender_id, receiver_id, file_upload, flag }) {
+  socket.on("chat message", function ({ message, sender_id, receiver_id, file_upload, flag, myid }) {
     const single_message = new Msg({ message, sender_id, receiver_id, file_upload, flag });
     single_message.save().then(() => {
       createdAt = single_message.createdAt;
@@ -996,6 +1051,4 @@ io.on("connection", (socket) => {
   app.all('*', (req, res, next) => {
     res.status(404).render('404');
   });
-
 });
-

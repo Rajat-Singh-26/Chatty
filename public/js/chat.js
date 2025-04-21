@@ -1,5 +1,13 @@
 const socket = io();
 
+// Log when socket connects/disconnects
+socket.on('connect', () => {
+  console.log('🟢 Socket connected');
+});
+socket.on('disconnect', () => {
+  console.warn('🔴 Socket disconnected — attempting to reconnect…');
+});
+
 // Login User Detail
 let record = JSON.parse(localStorage.getItem("currentUser"));
 if (!record) {
@@ -8,6 +16,8 @@ if (!record) {
 
 let image;
 userId = record.data.user._id;
+let myid = userId;
+
 let globalusername = record.data.user.name;
 userEmail = record.data.user.email;
 image = record.data.user.image != undefined ? record.data.user.image : 'default_image.jpg';
@@ -374,7 +384,8 @@ messageForm.addEventListener("submit", (e) => {
         sender_id: userId,
         receiver_id: receiverId,
         file_upload: filename,
-        flag:flag
+        flag:flag,
+        myid:myid
       });
       document.querySelector(".file_Upload .image_pre").remove();
       fetch("/fileUploads", { method: "POST", body: formData });
@@ -386,7 +397,8 @@ messageForm.addEventListener("submit", (e) => {
           sender_id: userId,
           receiver_id: receiverId,
           file_upload: "",
-          flag:flag
+          flag:flag,
+          myid:myid
         });
       }
     }
@@ -421,8 +433,28 @@ socket.on("chat message", function ({ id, message, sender_id, receiver_id, file_
   else {
     var created_at = time.getDate() + "-" + (time.getMonth() + 1) + "-" + time.getFullYear();
   }
-  document.getElementById(myid).querySelector('.message_time').innerHTML = created_at;
-  document.getElementById(myid).querySelector('.chat-user-message').innerHTML = message ? message : file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload : '';
+  // document.getElementById(myid).querySelector('.message_time').innerHTML = created_at;
+  // document.getElementById(myid).querySelector('.chat-user-message').innerHTML = message ? message : file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload : '';
+
+  const userElement = document.getElementById(myid);
+  if (userElement) {
+    const timeElement = userElement.querySelector('.message_time');
+    const messageElement = userElement.querySelector('.chat-user-message');
+  
+    if (timeElement) {
+      timeElement.innerHTML = created_at;
+    }
+  
+    if (messageElement) {
+      messageElement.innerHTML = message
+        ? message
+        : file_upload
+        ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload
+        : '';
+    }
+  }
+  
+
 
   if (sender_id === userId) {
     let menu = document.getElementById('users');
@@ -508,7 +540,9 @@ const addNewMessage = ({
     time.getMinutes();
   socket.emit("receiverId", { receiver_id });
   socket.on("receiver_data", function ({ users }) {
-    receiverName = users.name;
+    // receiverName = users.name;
+    receiverName = users && users.name ? users.name : 'Unknown';
+
   });
 
   var receiver_image = receiverImage
@@ -809,8 +843,26 @@ socket.on("isMessage", ({ messages }) => {
         document.getElementById(messages.sender_id).querySelector('.font-size-11').innerHTML = createdAt;
       }
       else {
-        document.getElementById(messages.receiver_id).querySelector('.chat-user-message').innerHTML = messages.message ? messages.message : messages.file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + messages.file_upload : '';
-        document.getElementById(messages.receiver_id).querySelector('.font-size-11').innerHTML = createdAt;
+        // document.getElementById(messages.receiver_id).querySelector('.chat-user-message').innerHTML = messages.message ? messages.message : messages.file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + messages.file_upload : '';
+        // document.getElementById(messages.receiver_id).querySelector('.font-size-11').innerHTML = createdAt;
+        const userElement = document.getElementById(myid);
+if (userElement) {
+  const timeElement = userElement.querySelector('.message_time');
+  const messageElement = userElement.querySelector('.chat-user-message');
+
+  if (timeElement) {
+    timeElement.innerHTML = created_at;
+  }
+
+  if (messageElement) {
+    messageElement.innerHTML = message
+      ? message
+      : file_upload
+      ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload
+      : '';
+  }
+}
+
       }
     }
     isMessages = messages;
@@ -1488,6 +1540,7 @@ forwordForm.addEventListener("submit", (e) => {
         sender_id: userId,
         receiver_id: element,
         file_upload: file_upload,
+        myid:myid
       });
     });
   }
@@ -1499,6 +1552,7 @@ forwordForm.addEventListener("submit", (e) => {
       receiver_id: element,
       file_upload: "",
       flag: "3",
+      myid:userId,
     });
   });
   }
@@ -1912,10 +1966,24 @@ socket.on("groupLists", ({ groups }) => {
 });
 
 // Group Data Append Topbar
-function contact_group(groupsId, groupName, userId) {
+function contact_group(groupsId, groupName, userId
+) {
   socket.emit("contactsDetail", groupsId, userId);
   document.querySelector(".messages__history").setAttribute("id", "g_chat_" + groupsId);
   document.querySelector(".user-chat").style.display = "block";
+
+
+////////////////
+
+// Show chat panel in mobile/tablet view
+if (window.innerWidth < 500) {
+  document.querySelector(".chat-leftsidebar").style.display = "none"; // hide sidebar
+  document.querySelector(".user-chats1").style.display = "block";     // show chat
+  document.querySelector(".user-chat").classList.add("user-chat-show"); // slide-in effect
+}
+
+
+
   document.querySelector(".online_contactList").innerHTML = "";
 
   startm = scrolli = 0
@@ -2132,49 +2200,108 @@ socket.on("groupDetail", ({ groupUsers, groupId }) => {
       }, 800)
     }
 
-    groupUsers.forEach((contact) => {
-      var contactName = contact.contactName != '' ? contact.contactName : contact.name;
-      var group_admin = contact.is_admin == 1 ? `Group Admin` : ``;
-      if (contact.is_admin == 1) {
-        var contact_id = contact.contact_id;
-        document.querySelector(".receiver_data").setAttribute("id", contact_id);
-      }
+    // groupUsers.forEach((contact) => {
+    //   var contactName = contact.contactName != '' ? contact.contactName : contact.name;
+    //   var group_admin = contact.is_admin == 1 ? `Group Admin` : ``;
+    //   if (contact.is_admin == 1) {
+    //     var contact_id = contact.contact_id;
+    //     document.querySelector(".receiver_data").setAttribute("id", contact_id);
+    //   }
 
-      var iconRemove = '';
-      if (contact.is_admin == 1 && admin_c != 0) {
+    //   var iconRemove = '';
+    //   if (contact.is_admin == 1 && admin_c != 0) {
+    //   }
+    //   if (contact.is_admin != 1 && admin_c != 0) {
+    //     remove_icon = `<i class="ri-close-line text-danger" id="${contact.contact_id}" onclick="deleteGroupUser(this.id)"></i>`;
+    //     iconRemove = remove_icon;
+    //   }
+    //   if (contact.contact_id != userId) {
+    //     groupcallContact.push(contact.contact_id);
+    //   }
+
+    //   const online_users = `
+    //   <li id="contact_list_${contact.contact_id}">
+    //   <a href="javascript:void(0);">
+    //   <div class="d-flex align-items-center">
+    //   <div class="chat-user-img me-3 ms-0">
+    //   <div class="avatar-xs">
+    //   <span class="avatar-title rounded-circle bg-soft-primary text-primary">
+    //   ${contact.name[0][0]}
+    //   </span>
+    //   </div>
+    //   </div>
+    //   <div class="flex-grow-1 overflow-hidden">
+    //   <h5 class="text-truncate font-size-14 mb-0" <span data-msg='0' class="badge badge-soft-danger rounded-pill float-end jxhbg"></span>${contactName}</h5>
+    //   </div>
+    //   ${iconRemove} <span class="bg-success text-white badge">${group_admin}</span>
+    //   </div>
+    //   </a>
+    //   </li>`;
+    //   document.querySelector(".online_contactList").innerHTML += online_users;
+
+    //   if (document.getElementById("add_contact_" + contact.user_id) != null) {
+    //     document.getElementById("add_contact_" + contact.user_id).checked = true ? 'checked' : '';
+    //   }
+    // });
+    groupUsers.forEach((contact) => {
+      const contactName = contact.contactName !== '' ? contact.contactName : contact.name;
+      const groupAdminLabel = contact.is_admin === 1 ? `Group Admin` : ``;
+    
+      // Set receiver ID if contact is an admin
+      if (contact.is_admin === 1) {
+        const contactId = contact.contact_id;
+        document.querySelector(".receiver_data").setAttribute("id", contactId);
       }
-      if (contact.is_admin != 1 && admin_c != 0) {
-        remove_icon = `<i class="ri-close-line text-danger" id="${contact.contact_id}" onclick="deleteGroupUser(this.id)"></i>`;
-        iconRemove = remove_icon;
+    
+      // Handle remove icon
+      let iconRemove = '';
+      if (contact.is_admin !== 1 && admin_c !== 0) {
+        iconRemove = `<i class="ri-close-line text-danger" id="${contact.contact_id}" onclick="deleteGroupUser(this.id)"></i>`;
       }
-      if (contact.contact_id != userId) {
+    
+      // Push to group call list
+      if (contact.contact_id !== userId) {
         groupcallContact.push(contact.contact_id);
       }
+    
+      // Safely get initial for avatar
+      // const initial = contact.name ? contact.name.trim().charAt(0).toUpperCase() : '?';
+      const nameStr = typeof contact.name === "string" ? contact.name : '';
+      const initial = nameStr.trim().charAt(0).toUpperCase() || '?';
 
-      const online_users = `
-      <li id="contact_list_${contact.contact_id}">
-      <a href="javascript:void(0);">
-      <div class="d-flex align-items-center">
-      <div class="chat-user-img me-3 ms-0">
-      <div class="avatar-xs">
-      <span class="avatar-title rounded-circle bg-soft-primary text-primary">
-      ${contact.name[0][0]}
-      </span>
-      </div>
-      </div>
-      <div class="flex-grow-1 overflow-hidden">
-      <h5 class="text-truncate font-size-14 mb-0" <span data-msg='0' class="badge badge-soft-danger rounded-pill float-end jxhbg"></span>${contactName}</h5>
-      </div>
-      ${iconRemove} <span class="bg-success text-white badge">${group_admin}</span>
-      </div>
-      </a>
-      </li>`;
-      document.querySelector(".online_contactList").innerHTML += online_users;
-
-      if (document.getElementById("add_contact_" + contact.user_id) != null) {
-        document.getElementById("add_contact_" + contact.user_id).checked = true ? 'checked' : '';
+    
+      const userHtml = `
+        <li id="contact_list_${contact.contact_id}">
+          <a href="javascript:void(0);">
+            <div class="d-flex align-items-center">
+              <div class="chat-user-img me-3 ms-0">
+                <div class="avatar-xs">
+                  <span class="avatar-title rounded-circle bg-soft-primary text-primary">
+                    ${initial}
+                  </span>
+                </div>
+              </div>
+              <div class="flex-grow-1 overflow-hidden">
+                <h5 class="text-truncate font-size-14 mb-0">
+                  ${contactName}
+                  <span data-msg='0' class="badge badge-soft-danger rounded-pill float-end jxhbg"></span>
+                </h5>
+              </div>
+              ${iconRemove}
+              <span class="bg-success text-white badge">${groupAdminLabel}</span>
+            </div>
+          </a>
+        </li>`;
+    
+      document.querySelector(".online_contactList").innerHTML += userHtml;
+    
+      // Check contact if already selected
+      const checkbox = document.getElementById("add_contact_" + contact.user_id);
+      if (checkbox) {
+        checkbox.checked = true;
       }
     });
+    
   }
 });
 
@@ -3413,8 +3540,26 @@ socket.on("chat message", function ({ sender_id, message, receiver_id, createdAt
   let created_at = `${time.getHours()}:${time.getMinutes()}`;
 
   // Insert message into chat window
-  document.getElementById(myid).querySelector('.message_time').innerHTML = created_at;
-  document.getElementById(myid).querySelector('.chat-user-message').innerHTML = message || file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload : '';
+  // document.getElementById(myid).querySelector('.message_time').innerHTML = created_at;
+  // document.getElementById(myid).querySelector('.chat-user-message').innerHTML = message || file_upload ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload : '';
+
+  const userElement = document.getElementById(myid);
+  if (userElement) {
+    const timeElement = userElement.querySelector('.message_time');
+    const messageElement = userElement.querySelector('.chat-user-message');
+  
+    if (timeElement) {
+      timeElement.innerHTML = created_at;
+    }
+  
+    if (messageElement) {
+      messageElement.innerHTML = message
+        ? message
+        : file_upload
+        ? `<i class='ri-image-fill align-middle me-1 ms-0'></i>` + file_upload
+        : '';
+    }
+  }
 
   // Group chat notifications
   if (sender_id !== userId) {
@@ -3502,7 +3647,7 @@ socket.on("group message", function ({ message, sender_id, receiverName, group_i
         }
 
         // Ensure the sender's profile image (senderImage) is used, and fallback to a default one if not provided
-        const senderProfileImageUrl = senderImage || `assets/images/users/default_profile.jpg`;  // Default image if no senderImage is provided
+        const senderProfileImageUrl = senderImage || `assets/images/users/default_image.jpg`;  // Default image if no senderImage is provided
         const messageContent = message;
 
         // Request notification permission if not granted yet
@@ -3512,7 +3657,7 @@ socket.on("group message", function ({ message, sender_id, receiverName, group_i
         var instance = new Notification( receiverName, {
             body: messageContent,
             icon: senderProfileImageUrl, // Sender's profile image
-            image: groupImage || `assets/images/groups/default.jpg` // Fallback for group image
+            image: groupImage || `assets/images/users/default_image.jpg` // Fallback for group image
         });
 
         // Optionally, you could display more details like sender's name and message in the notification body
@@ -3533,3 +3678,4 @@ function requestNotificationPermissions() {
       Notification.requestPermission(function (permission) { });
   }
 }
+

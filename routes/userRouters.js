@@ -13,4 +13,9 @@ router.get('/forgot_password', userController.forgot_password);
 router.get('/reset_password', userController.reset_password);
 router.get('/', userController.index);
 
+
+
 module.exports = router;
+
+
+

@@ -1,8 +1,33 @@
 <!doctype html>
 <html lang="en">
-
 <head>
 
+  <style>
+    @media (max-width: 999px) {
+      body::before {
+        content: "This app requires a screen width of at least 1000px.";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: white;
+        color: red;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        z-index: 9999;
+        padding: 2rem;
+        text-align: center;
+      }
+  
+      .layout-wrapper {
+        display: none !important;
+      }
+    }
+  </style>
+  
   <meta charset="utf-8" />
   <title>Chat | Chatty - Chat, Audio and video Call App</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,7 +50,6 @@
   <link href="assets/css/style.css" id="app-style" rel="stylesheet" type="text/css" />
   <!-- Toastr Css -->
   <link href="./assets/css/toastr.min.css" rel="stylesheet" />
-
 </head>
 
 <body>
@@ -775,6 +799,7 @@
             <h5 class="font-size-16 mb-1 text-truncate receiver_name">Doris Brown1</h5>
             <p class="text-muted text-truncate mb-1 receiver_status"><i class="ri-record-circle-fill font-size-10 me-1 ms-0"></i> Active</p>
           </div>
+      
           <!-- End profile user -->
 
           <!-- Start user-profile-desc -->

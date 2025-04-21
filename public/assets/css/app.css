@@ -5,7 +5,7 @@
   --bs-sidebar-bg: #ffffff;
   --bs-sidebar-menu-item-color: #878a92;
   --bs-sidebar-menu-item-active-color: #fed136;
-  --bs-sidebar-menu-item-active-bg: #f7f7ff;
+  --bs-sidebar-menu-item-active-bg: #000000;
   --bs-sidebar-sub-bg: #f5f7fb;
   --bs-chat-primary-bg: #fed136;
   --bs-chat-secondary-bg: #f5f7fb;
@@ -71,7 +71,7 @@
   --bs-sidebar-bg: #36404a;
   --bs-sidebar-menu-item-color: #a6b0cf;
   --bs-sidebar-menu-item-active-color: #fed136;
-  --bs-sidebar-menu-item-active-bg: #3e4a56;
+  --bs-sidebar-menu-item-active-bg: #000000;
   --bs-sidebar-sub-bg: #303841;
   --bs-chat-primary-bg: #fed136;
   --bs-chat-secondary-bg: #36404a;
@@ -982,7 +982,7 @@
 }
 .side-menu-nav .nav-item .nav-link.active {
   background-color: var(--bs-sidebar-menu-item-active-bg);
-  color: #fed136;
+  color: #ffffff;
 }
 .side-menu-nav .nav-item.show > .nav-link {
   background-color: var(--bs-sidebar-menu-item-active-bg);
